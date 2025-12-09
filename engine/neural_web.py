@@ -1,16 +1,21 @@
-# Importa as bibliotecas e frameworks necessários
+# Import das bibliotecas
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-import warnings
 import joblib
-import streamlit as st
 
-warnings.filterwarnings("ignore")
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+
+from sklearn.pipeline import Pipeline
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+
+
+import streamlit as st
 
 # ============================================================
 # TABELA
@@ -68,7 +73,6 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.30, random_state=3
 )
 
-
 # ============================================================
 # HISTOGRAMAS
 # ============================================================
@@ -93,7 +97,6 @@ with st.expander("Histogramas"):
         st.pyplot(fig)
         plt.close(fig)
 
-
 # ============================================================
 # VIOLINPLOT + SWARMPLOT
 # ============================================================
@@ -107,6 +110,7 @@ with st.expander("Violinplots e Swarmplots por Espécie"):
             x='species',
             y=feature,
             palette='muted',
+            hue='species',
             inner='quartile',
             ax=ax
         )
@@ -126,7 +130,6 @@ with st.expander("Violinplots e Swarmplots por Espécie"):
         st.pyplot(fig)
         plt.close(fig)
 
-
 # ============================================================
 # GRÁFICO DE DISPERSÃO ENTRE VARIAVEIS
 # ============================================================
@@ -144,17 +147,27 @@ with st.expander("Gráfico de dispersão body_mass_g vs flipper_length_mm"):
         st.pyplot(fig)
         plt.close(fig)
 
+
+## ============================================================
+# INICIAR ALGORITMO REDE NEURAL
 # ============================================================
-# INICIAR ALGORITM K-NN
-# ============================================================
 
-with st.expander("Treinamento do Modelo KNN"):
-    st.subheader("Treinando o modelo KNN (k = 3)")
+with st.expander("Treinamento do Modelo rede neural"):
+    st.subheader("Treinando o modelo rede neural")
 
-    penguim_classifier = KNeighborsClassifier(n_neighbors=3)
-    penguim_classifier.fit(X_train, y_train)
+    rna_classifier = Pipeline([
+    ("scaler", StandardScaler()),
+    ("mlp", MLPClassifier(
+        hidden_layer_sizes=(50, 100),
+        activation="relu",
+        solver="adam",
+        max_iter=800,
+        random_state=1
+    ))
+])
+    rna_classifier = rna_classifier.fit(X_train, y_train)
 
-    y_pred = penguim_classifier.predict(X_test)
+    y_pred = rna_classifier.predict(X_test)
 
     st.success("Modelo treinado com sucesso!")
 
@@ -180,7 +193,7 @@ with st.expander("Matriz de Confusão"):
 
     cf = confusion_matrix(y_test, y_pred)
 
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(10, 6))
     sns.heatmap(
         cf,
         annot=True,
@@ -190,22 +203,20 @@ with st.expander("Matriz de Confusão"):
         linecolor="black"
     )
     ax.set_title("Matriz de Confusão")
-    ax.set_xlabel("Classe Predita (0 = Adelie, 1 = Chinstrap, 2 = Gentoo)")
-    ax.set_ylabel("Classe Real")
+    ax.set_xlabel("Classe Predita (Adelie, Chinstrap, Gentoo)")
+    ax.set_ylabel("Classe Real (Adelie, Chinstrap, Gentoo)")
     st.pyplot(fig)
 
-
 # ============================================================
-# NOVA AMOSTRA PARA PREDIÇÃO
+# NOVAS AMOSTRAS PARA PREDIÇÃO
 # ============================================================
 
-warnings.filterwarnings("ignore")
 test_samples = df_penguins_size.sample(10, random_state=42)
 test_samples_X = test_samples[X.columns] 
 
 # Predição
-test_preds = penguim_classifier.predict(test_samples_X)
-test_proba = penguim_classifier.predict_proba(test_samples_X)
+test_preds = rna_classifier.predict(test_samples_X)
+test_proba = rna_classifier.predict_proba(test_samples_X)
 
 with st.expander("Predição para Novas Amostras"):
     st.subheader("Predição para Novas Amostras de Teste")
@@ -218,26 +229,27 @@ with st.expander("Predição para Novas Amostras"):
     # DataFrame com probabilidades
     proba_df = pd.DataFrame(
         test_proba,
-        columns=penguim_classifier.classes_
+        columns=rna_classifier.classes_
     )
     st.write("Probabilidades de cada classe:")
     st.dataframe(proba_df.style.background_gradient(cmap="Greens"))
+
 
 # ============================================================
 # EXPORTAR O MODELO TREINADO
 # ============================================================
 
-# Salva o modelo
-joblib.dump(penguim_classifier, 'penguim_classifier_knn_model.pkl')
+# Salva o modelo Decision Tree
+joblib.dump(rna_classifier, 'penguim_classifier_neural_model.pkl')
 
 # Área de download do modelo no Streamlit
 with st.expander("Download do Modelo Treinado"):
-    st.subheader("Baixe o modelo KNN treinado")
+    st.subheader("Baixe o modelo neural treinado")
     
-    with open("penguim_classifier_knn_model.pkl", "rb") as file:
+    with open("penguim_classifier_neural_model.pkl", "rb") as file:
         st.download_button(
-            label="Baixar Modelo KNN",
+            label="📥 Baixar Modelo Neural",
             data=file,
-            file_name="penguim_classifier_knn_model.pkl",
+            file_name="penguim_classifier_neural_model.pkl",
             mime="application/octet-stream"
         )

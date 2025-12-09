@@ -1,16 +1,19 @@
-# Importa as bibliotecas e frameworks necessários
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-import warnings
+# Import das bibliotecas
+
+import pandas as pd # Biblioteca pandas para análise e manipulação de dados
+import matplotlib.pyplot as plt # Biblioteca matplotlib para customizar gráficos
+import seaborn as sns # Biblioteca Seaborn para esboçar gráficos
+import numpy as np # Biblioteca numpy para cálculos matemáticos e vetorização
+import graphviz # Biblioteca ghaphviz
+
+# Exportar modelos treinados em pkl
 import joblib
+
+from sklearn.model_selection import train_test_split # Dividir os dados do conjunto em proporção de treinamento e testes
+from sklearn.tree import DecisionTreeClassifier, plot_tree, export_graphviz # Usar o modelo de árvore de decisão para classificação e desenhar a árvore
+from sklearn.metrics import classification_report, confusion_matrix # Avaliar o desempenho do modelo
 import streamlit as st
 
-warnings.filterwarnings("ignore")
 
 # ============================================================
 # TABELA
@@ -68,7 +71,6 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.30, random_state=3
 )
 
-
 # ============================================================
 # HISTOGRAMAS
 # ============================================================
@@ -93,7 +95,6 @@ with st.expander("Histogramas"):
         st.pyplot(fig)
         plt.close(fig)
 
-
 # ============================================================
 # VIOLINPLOT + SWARMPLOT
 # ============================================================
@@ -107,6 +108,7 @@ with st.expander("Violinplots e Swarmplots por Espécie"):
             x='species',
             y=feature,
             palette='muted',
+            hue='species',
             inner='quartile',
             ax=ax
         )
@@ -126,7 +128,6 @@ with st.expander("Violinplots e Swarmplots por Espécie"):
         st.pyplot(fig)
         plt.close(fig)
 
-
 # ============================================================
 # GRÁFICO DE DISPERSÃO ENTRE VARIAVEIS
 # ============================================================
@@ -144,17 +145,18 @@ with st.expander("Gráfico de dispersão body_mass_g vs flipper_length_mm"):
         st.pyplot(fig)
         plt.close(fig)
 
+
+## ============================================================
+# INICIAR ALGORITMO DECISION TREE
 # ============================================================
-# INICIAR ALGORITM K-NN
-# ============================================================
 
-with st.expander("Treinamento do Modelo KNN"):
-    st.subheader("Treinando o modelo KNN (k = 3)")
+with st.expander("Treinamento do Modelo Decision Tree"):
+    st.subheader("Treinando o modelo Decision Tree")
 
-    penguim_classifier = KNeighborsClassifier(n_neighbors=3)
-    penguim_classifier.fit(X_train, y_train)
+    tree_decision_classifier = DecisionTreeClassifier(random_state=0, criterion='gini')
+    tree_decision_classifier = tree_decision_classifier.fit(X_train, y_train)
 
-    y_pred = penguim_classifier.predict(X_test)
+    y_pred = tree_decision_classifier.predict(X_test)
 
     st.success("Modelo treinado com sucesso!")
 
@@ -194,18 +196,15 @@ with st.expander("Matriz de Confusão"):
     ax.set_ylabel("Classe Real")
     st.pyplot(fig)
 
-
 # ============================================================
-# NOVA AMOSTRA PARA PREDIÇÃO
+# NOVAS AMOSTRAS PARA PREDIÇÃO
 # ============================================================
 
-warnings.filterwarnings("ignore")
 test_samples = df_penguins_size.sample(10, random_state=42)
 test_samples_X = test_samples[X.columns] 
-
 # Predição
-test_preds = penguim_classifier.predict(test_samples_X)
-test_proba = penguim_classifier.predict_proba(test_samples_X)
+test_preds = tree_decision_classifier.predict(test_samples_X)
+test_proba = tree_decision_classifier.predict_proba(test_samples_X)
 
 with st.expander("Predição para Novas Amostras"):
     st.subheader("Predição para Novas Amostras de Teste")
@@ -218,26 +217,46 @@ with st.expander("Predição para Novas Amostras"):
     # DataFrame com probabilidades
     proba_df = pd.DataFrame(
         test_proba,
-        columns=penguim_classifier.classes_
+        columns=tree_decision_classifier.classes_
     )
     st.write("Probabilidades de cada classe:")
     st.dataframe(proba_df.style.background_gradient(cmap="Greens"))
+
+
+# ============================================================
+# VISUALIZAÇÃO DA ARVORE DE DECISÃO
+# ============================================================
+
+with st.expander("Visualização da Árvore de Decisão"):
+    st.subheader("Árvore de Decisão Treinada")
+
+    fig, ax = plt.subplots(figsize=(20, 10))
+    plot_tree(
+        tree_decision_classifier,
+        feature_names=X.columns,
+        class_names=tree_decision_classifier.classes_,
+        filled=True,
+        rounded=True,
+        fontsize=12,
+        ax=ax
+    )
+    st.pyplot(fig)
 
 # ============================================================
 # EXPORTAR O MODELO TREINADO
 # ============================================================
 
-# Salva o modelo
-joblib.dump(penguim_classifier, 'penguim_classifier_knn_model.pkl')
+# Salva o modelo Decision Tree
+joblib.dump(tree_decision_classifier, 'penguim_classifier_tree_model.pkl')
 
 # Área de download do modelo no Streamlit
 with st.expander("Download do Modelo Treinado"):
-    st.subheader("Baixe o modelo KNN treinado")
+    st.subheader("Baixe o modelo Decision Tree treinado")
     
-    with open("penguim_classifier_knn_model.pkl", "rb") as file:
+    with open("penguim_classifier_tree_model.pkl", "rb") as file:
         st.download_button(
-            label="Baixar Modelo KNN",
+            label="Baixar Modelo Decision Tree",
             data=file,
-            file_name="penguim_classifier_knn_model.pkl",
+            file_name="penguim_classifier_tree_model.pkl",
             mime="application/octet-stream"
         )
