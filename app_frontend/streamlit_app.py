@@ -12,11 +12,11 @@ st.title("--Penguim Species Classifier--")
 st.write("Insira as medidas e obtenha a predição da espécie e a certeza (probabilidades).")
 
 # Show image
-img_path = "app_frontend/assets/penguim.jpg"
+img_path = "app_frontend/assets/penguins.png"
 if os.path.exists(img_path):
-    st.image(Image.open(img_path), caption="Iris", use_column_width=True)
+    st.image(Image.open(img_path), caption="Penguins")
 else:
-    st.info("Coloque uma imagem do penguim em 'app_frontend/assets/penguins.jpg' para visualizar aqui.")
+    st.info("Coloque uma imagem do penguim em 'app_frontend/assets/penguins.png' para visualizar aqui.")
 
 
 # --------- Função para setar valores ---------

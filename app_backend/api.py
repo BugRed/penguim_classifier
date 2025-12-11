@@ -10,7 +10,7 @@ app = FastAPI(title="Pinguim Predictor API")
 # Permissões do Streamlit (rodando em outra porta) para chamar API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Não Restrinje os domínios
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
